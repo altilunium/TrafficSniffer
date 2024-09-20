@@ -1,65 +1,117 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const logElement = document.getElementById('log');
-     const storageStatus = document.getElementById('storageStatus');
+    const logElement = document.getElementById('log');
+    const storageStatus = document.getElementById('storageStatus');
     const clearStorageButton = document.getElementById('clearStorageButton');
 
+    // Open IndexedDB
+    function openDatabase(callback) {
+        const request = indexedDB.open("BrowsingHistoryDB", 1);
 
-     function checkLocalStorageCapacity() {
-         chrome.storage.local.getBytesInUse(null, function (usedBytes) {
-            const capacity = 5 * 1024 * 1024; // 5MB is the limit for chrome.storage.local
-            const isFull = usedBytes >= capacity;
-            var perc = usedBytes / capacity * 100
-            storageStatus.textContent = isFull ? 'Chrome storage is full.' : `Chrome storage used: ${perc}%.`;
+        request.onsuccess = (event) => {
+            const db = event.target.result;
+            callback(db);
+        };
+
+        request.onerror = (event) => {
+            console.error("IndexedDB error: ", event.target.error);
+        };
+    }
+
+    // Function to fetch browsing history from IndexedDB
+    function fetchBrowsingHistory() {
+        openDatabase((db) => {
+            const transaction = db.transaction(["browsingHistory"], "readonly");
+            const objectStore = transaction.objectStore("browsingHistory");
+            const getAllRequest = objectStore.getAll();
+
+            getAllRequest.onsuccess = () => {
+                const browsingHistory = getAllRequest.result;
+
+                // Display each log entry
+                browsingHistory.forEach((entry) => {
+                    const li = document.createElement('p');
+                    li.innerHTML = `${formatTimestamp(entry.timestamp)}<br><b>${entry.tabTitle}</b><br>${entry.tabUrl}<br>${entry.requestUrl}<br><br>`;
+
+                    if (logElement.firstChild) {
+                        logElement.insertBefore(li, logElement.firstChild);
+                    } else {
+                        logElement.appendChild(li);
+                    }
+                });
+            };
+
+            getAllRequest.onerror = (event) => {
+                console.error("Error fetching browsing history: ", event.target.error);
+            };
         });
     }
 
-     function clearLocalStorage() {
-        chrome.storage.local.clear(function () {
-            checkChromeStorageCapacity(); // Update status after clearing
+    // Function to clear browsing history from IndexedDB
+    function clearIndexedDBHistory() {
+        openDatabase((db) => {
+            const transaction = db.transaction(["browsingHistory"], "readwrite");
+            const objectStore = transaction.objectStore("browsingHistory");
+            const clearRequest = objectStore.clear();
+
+            clearRequest.onsuccess = () => {
+                console.log("Browsing history cleared from IndexedDB.");
+                checkStorageCapacity(); // Update the status after clearing
+                logElement.innerHTML = ''; // Clear the displayed logs
+            };
+
+            clearRequest.onerror = (event) => {
+                console.error("Error clearing browsing history: ", event.target.error);
+            };
         });
     }
 
-    clearStorageButton.addEventListener('click', clearLocalStorage);
+    // Function to check the IndexedDB storage capacity (this is a simulation)
+    function checkStorageCapacity() {
+        openDatabase((db) => {
+            const transaction = db.transaction(["browsingHistory"], "readonly");
+            const objectStore = transaction.objectStore("browsingHistory");
+            const countRequest = objectStore.count();
 
-    checkLocalStorageCapacity();
+            countRequest.onsuccess = () => {
+                const usedEntries = countRequest.result;
+                const capacity = 1000000; // Simulated capacity (1 million entries)
+                const isFull = usedEntries >= capacity;
+                const perc = (usedEntries / capacity) * 100;
+                storageStatus.textContent = isFull
+                    ? 'IndexedDB storage is full.'
+                    : `IndexedDB storage used: ${perc.toFixed(2)}%.`;
+            };
 
-  // Function to convert ISO timestamp to GMT+7 and remove T/Z
-  function formatTimestamp(isoTimestamp) {
-    const date = new Date(isoTimestamp);
+            countRequest.onerror = (event) => {
+                console.error("Error checking storage capacity: ", event.target.error);
+            };
+        });
+    }
 
-    // Convert to GMT+7
-    const options = {
-      timeZone: 'Asia/Bangkok', // GMT+7
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    };
+    // Event listener for clearing the history
+    clearStorageButton.addEventListener('click', clearIndexedDBHistory);
 
-    const formattedDate = new Intl.DateTimeFormat('en-US', options).format(date);
-    return formattedDate.replace(',', ''); // Remove comma
-  }
+    // Call this to initially check storage capacity
+    checkStorageCapacity();
 
-  // Fetch the browsing history from local storage
-  chrome.storage.local.get({ browsingHistory: [] }, (result) => {
-    const browsingHistory = result.browsingHistory;
+    // Call this to fetch browsing history and display it
+    fetchBrowsingHistory();
 
-    // Display each log entry
-    browsingHistory.forEach((entry) => {
-      const li = document.createElement('p');
-      li.innerHTML = `${formatTimestamp(entry.timestamp)}<br><b>${entry.tabTitle}</b><br>${entry.tabUrl}<br>${entry.requestUrl}<br><br>`;
+    // Function to format timestamp
+    function formatTimestamp(isoTimestamp) {
+        const date = new Date(isoTimestamp);
 
-      if (logElement.firstChild) {
-        logElement.insertBefore(li, logElement.firstChild);
-      } else {
-        logElement.appendChild(li);
-      }
-    });
+        const options = {
+            timeZone: 'Asia/Bangkok', // GMT+7
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+        };
 
-    
-  });
-
-
+        const formattedDate = new Intl.DateTimeFormat('en-US', options).format(date);
+        return formattedDate.replace(',', ''); // Remove comma
+    }
 });
