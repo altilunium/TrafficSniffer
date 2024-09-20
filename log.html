@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Traffic Sniffer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 24px;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 10px;
+    }
+
+    p {
+      margin:0px;
+      padding:0px;
+    }
+          #storageStatus {
+            color: red;
+            font-weight: bold;
+        }
+  </style>
+</head>
+<body>
+  <h1>Traffic Sniffer</h1>
+  <div id="storageStatus">Checking local storage...</div>
+    <button id="clearStorageButton">Clear Local Storage</button>
+
+  <div id="log"></div>
+
+  <script src="log.js"></script>
+</body>
+</html>
