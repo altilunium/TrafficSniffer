@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Display each log entry
                 browsingHistory.forEach((entry) => {
                     const li = document.createElement('p');
-                    li.innerHTML = `${formatTimestamp(entry.timestamp)}<br><b>${entry.tabTitle}</b><br>${entry.tabUrl}<br>${entry.requestUrl}<br><br>`;
+                    li.innerHTML = `${formatTimestamp(entry.timestamp)}<br><b>${entry.tabTitle}</b><br>${entry.tabUrl}<br>${entry.requestUrl}<br>${entry.ipAddress}<br><br>`;
 
                     if (logElement.firstChild) {
                         logElement.insertBefore(li, logElement.firstChild);

@@ -12,6 +12,7 @@ function openDatabase(callback) {
             objectStore.createIndex("timestamp", "timestamp", { unique: false });
             objectStore.createIndex("tabUrl", "tabUrl", { unique: false });
             objectStore.createIndex("tabTitle", "tabTitle", { unique: false });
+            objectStore.createIndex("ipAddress", "ipAddress", { unique: false });
         }
     };
 
@@ -26,7 +27,7 @@ function openDatabase(callback) {
 }
 
 // Log browsing history to IndexedDB
-function logBrowsingHistory(requestUrl, timestamp, tabUrl, tabTitle) {
+function logBrowsingHistory(requestUrl, timestamp, tabUrl, tabTitle,ipAddress) {
     openDatabase((db) => {
         const transaction = db.transaction(["browsingHistory"], "readwrite");
         const objectStore = transaction.objectStore("browsingHistory");
@@ -36,7 +37,8 @@ function logBrowsingHistory(requestUrl, timestamp, tabUrl, tabTitle) {
             requestUrl: requestUrl,
             timestamp: timestamp,
             tabUrl: tabUrl,
-            tabTitle: tabTitle
+            tabTitle: tabTitle,
+            ipAddress:ipAddress
         });
 
         transaction.oncomplete = () => {
@@ -54,6 +56,7 @@ chrome.webRequest.onCompleted.addListener(
         const requestUrl = details.url;
         const timestamp = new Date().toISOString();
         const tabId = details.tabId;
+        const ipAddress = details.ip;
 
         if (tabId !== -1) {
             // Get information about the tab that made the request
@@ -65,7 +68,7 @@ chrome.webRequest.onCompleted.addListener(
                     const tabTitle = tab.title;
 
                     // Log the request, tab info, and timestamp to IndexedDB
-                    logBrowsingHistory(requestUrl, timestamp, tabUrl, tabTitle);
+                    logBrowsingHistory(requestUrl, timestamp, tabUrl, tabTitle, ipAddress);
                 }
             });
         }
